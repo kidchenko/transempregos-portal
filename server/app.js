@@ -15,7 +15,7 @@ const jobs       = require('./routes/jobs');
 const mongoose   = require('mongoose');
 
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://localhost/test');
+mongoose.connect('mongodb://trans:trans@ds044679.mlab.com:44679/transempregos');
 
 // middlewares
 app.use(bodyparser);

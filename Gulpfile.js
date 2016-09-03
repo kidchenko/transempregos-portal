@@ -1,25 +1,65 @@
 "use strict";
 var gulp = require("gulp"),
     babel = require("gulp-babel"),
+    browserify = require('browserify'),
     sourcemaps = require("gulp-sourcemaps"),
+    buffer = require('vinyl-buffer'),
     concat = require("gulp-concat"),
     mergeStream = require('merge-stream'),
     debug = require("gulp-debug"),
     nodemon = require('gulp-nodemon'),
     FileCache = require("gulp-file-cache"),
     less = require('gulp-less'),
+    source = require('vinyl-source-stream'),
     fs = require('fs'),
     path = require('path'),
     args = require('yargs').argv,
     plumber = require('gulp-plumber'),
     karmaServer = require('karma').Server,
     mocha = require('gulp-mocha'),
+    tsify = require('tsify'),
+    watchify = require('watchify'),
     protractor = require("gulp-protractor").protractor;
 
 (function createGulpCacheDir() {
     var dir = path.resolve(__dirname, '.gulp-cache');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 })()
+
+var compile = function (watch) {
+    var bundler = watchify(browserify('./public/main.ts', { debug: true }).plugin(tsify));
+
+    function rebundle() {
+        return bundler.bundle()
+            .on('error',
+                function (err) {
+                    console.error(err);
+                    this.emit('end');
+                })
+            .pipe(source('bundle.js'))
+            .pipe(buffer())
+            .pipe(sourcemaps.init({ loadMaps: true }))
+            .pipe(sourcemaps.write('./'))
+            .pipe(gulp.dest('./dist/public/'));
+    }
+
+    if (watch) {
+        bundler.on('update',
+            function () {
+                console.log('-> bundling...');
+                rebundle();
+            });
+        rebundle();
+    } else {
+        rebundle().pipe(exit());
+    }
+};
+
+var watch = function () {
+    return compile(true);
+};
+
+gulp.task('app.watch', function () { return watch(); });
 
 gulp.task('watch', ['transpile'], function () {
     gulp.watch('public/**/*.js', ['transpile:front']);
