@@ -8,6 +8,7 @@ var gulp = require("gulp"),
     mergeStream = require('merge-stream'),
     debug = require("gulp-debug"),
     nodemon = require('gulp-nodemon'),
+    exit = require('gulp-exit'),
     FileCache = require("gulp-file-cache"),
     less = require('gulp-less'),
     source = require('vinyl-source-stream'),
@@ -26,8 +27,8 @@ var gulp = require("gulp"),
     if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 })()
 
-var compile = function (watch) {
-    var bundler = watchify(browserify('./public/main.ts', { debug: true }).plugin(tsify));
+var compile = function () {
+    var bundler = browserify('./public/main.ts', { debug: true }).plugin(tsify);
 
     function rebundle() {
         return bundler.bundle()
@@ -43,26 +44,11 @@ var compile = function (watch) {
             .pipe(gulp.dest('./dist/public/'));
     }
 
-    if (watch) {
-        bundler.on('update',
-            function () {
-                console.log('-> bundling...');
-                rebundle();
-            });
-        rebundle();
-    } else {
-        rebundle().pipe(exit());
-    }
+    return rebundle();
 };
-
-var watch = function () {
-    return compile(true);
-};
-
-gulp.task('app.watch', function () { return watch(); });
 
 gulp.task('watch', ['transpile'], function () {
-    gulp.watch('public/**/*.js', ['transpile:front']);
+    gulp.watch('public/**/*.ts', ['transpile:front']);
     gulp.watch('public/**/*.less', ['transpile:less']);
     let nodemonOpt = {
         script: 'dist/server/bin/www.js',
@@ -100,7 +86,7 @@ gulp.task("test:front", function (done) {
 });
 
 gulp.task("autotest", function () {
-    gulp.watch('public/**/*.js', ['transpile:front']);
+    gulp.watch('public/**/*.ts', ['transpile:front']);
     gulp.watch(["server/**/*.js", "test/**/*.js"], ['transpile:back']);
     gulp.watch(["dist/server/**/*.js", "dist/test/**/*.spec.js"], ['test:back']);
     new karmaServer({
@@ -150,18 +136,19 @@ function transpileBack() {
 }
 
 function transpileFront() {
-    var frontFileCache = new FileCache('.gulp-cache/.gulp-cache-front');
-    return gulp.src(["public/**/*.js"])
-        .pipe(plumber())
-        .pipe(frontFileCache.filter())
-        .pipe(sourcemaps.init())
-        .pipe(babel({
-            presets: ['es2015']
-        }))
-        .pipe(frontFileCache.cache())
-        .pipe(sourcemaps.write("."))
-        .pipe(debug({ title: 'front' }))
-        .pipe(gulp.dest("dist/public"));
+    return compile();
+    // var frontFileCache = new FileCache('.gulp-cache/.gulp-cache-front');
+    // return gulp.src(["public/**/*.js"])
+    //     .pipe(plumber())
+    //     .pipe(frontFileCache.filter())
+    //     .pipe(sourcemaps.init())
+    //     .pipe(babel({
+    //         presets: ['es2015']
+    //     }))
+    //     .pipe(frontFileCache.cache())
+    //     .pipe(sourcemaps.write("."))
+    //     .pipe(debug({ title: 'front' }))
+    //     .pipe(gulp.dest("dist/public"));
 };
 
 gulp.task("default", ['transpile'])
