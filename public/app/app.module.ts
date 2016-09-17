@@ -4,6 +4,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 import { HeaderComponent } from './common/header/header.component';
 import { NavBarComponent } from './common/navbar/navbar.component';
+import { FooterComponent } from './common/footer/footer.component';
 
 import { AppComponent } from './app.component';
 
@@ -12,7 +13,8 @@ import { AppComponent } from './app.component';
   declarations: [
     AppComponent,
     HeaderComponent,
-    NavBarComponent
+    NavBarComponent,
+
   ],
   bootstrap: [AppComponent]
 })
